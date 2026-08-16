@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+deepl
+mss
+pywebview
+pyperclip
+pystray
+keyboard
+pillow
+paddlepaddle
+paddleocr
