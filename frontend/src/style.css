@@ -1,0 +1,254 @@
+:root {
+  --bg-0: #060a14;
+  --bg-1: #0a1120;
+  --bg-2: #0f1a30;
+  --panel: rgba(17, 28, 52, 0.72);
+  --panel-solid: #111c34;
+  --border: rgba(110, 150, 255, 0.16);
+  --border-strong: rgba(110, 150, 255, 0.4);
+  --primary: #4d9fff;
+  --accent: #00e0ff;
+  --violet: #7c6cff;
+  --text: #e8eefc;
+  --text-dim: #8b9bc0;
+  --text-faint: #5b6a8f;
+}
+
+/* Arco Design 主色覆盖为科技蓝（RGB 三元组格式） */
+body[arco-theme='dark'] {
+  --primary-6: 77, 159, 255;
+  --primary-5: 96, 172, 255;
+  --primary-7: 57, 133, 235;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--text);
+  overflow: hidden;
+  background:
+    radial-gradient(1100px 560px at 15% -12%, rgba(77, 159, 255, 0.22), transparent 60%),
+    radial-gradient(900px 520px at 105% 0%, rgba(0, 224, 255, 0.14), transparent 55%),
+    radial-gradient(820px 520px at 50% 118%, rgba(124, 108, 255, 0.16), transparent 55%),
+    linear-gradient(165deg, #060a14 0%, #0a1120 52%, #080d18 100%);
+}
+
+/* 细网格 + 顶部光晕，营造科技感底纹 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(110, 150, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(110, 150, 255, 0.045) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, #000 30%, transparent 100%);
+}
+
+.app {
+  height: 100%;
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 20px;
+  background: rgba(10, 17, 32, 0.7);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #4d9fff 0%, #00e0ff 100%);
+  box-shadow: 0 0 18px rgba(0, 224, 255, 0.45);
+}
+
+.app-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, #cfe4ff 0%, #6ab7ff 55%, #00e0ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.app-subtitle {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  padding-left: 12px;
+  border-left: 1px solid var(--border-strong);
+}
+
+.settings-btn {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-dim) !important;
+  transition: color 0.2s, text-shadow 0.2s, transform 0.3s;
+}
+.settings-btn:hover {
+  color: var(--accent) !important;
+  text-shadow: 0 0 12px rgba(0, 224, 255, 0.7);
+  transform: rotate(60deg);
+}
+
+.lang-select {
+  width: 120px;
+}
+
+.app-body {
+  padding: 24px;
+  overflow: auto;
+  background: transparent;
+}
+
+.key-alert {
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 176, 32, 0.35);
+  background: rgba(255, 176, 32, 0.08);
+}
+
+/* 截图区域相框：玻璃卡片 + 发光描边 */
+.shot-frame {
+  max-width: 720px;
+  margin: 6px auto 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  min-height: 120px;
+  max-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: rgba(15, 26, 48, 0.55);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 0 24px rgba(77, 159, 255, 0.12);
+  position: relative;
+}
+
+.shot-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 14px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(77, 159, 255, 0.5), rgba(0, 224, 255, 0.15) 40%, transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.shot-frame-img {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  display: block;
+}
+
+.shot-frame-empty {
+  color: var(--text-faint);
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 34px 0 20px;
+}
+
+.hero-btns {
+  display: flex;
+  gap: 14px;
+}
+
+.hero-btns .arco-btn {
+  border-radius: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+}
+.hero-btns .arco-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+.hero-btns .arco-btn-primary {
+  box-shadow: 0 0 22px rgba(77, 159, 255, 0.4);
+  background: linear-gradient(135deg, #3f8cff 0%, #2f6fff 100%);
+}
+.hero-btns .arco-btn-outline {
+  border-color: var(--border-strong);
+  color: #bcd6ff;
+  box-shadow: inset 0 0 0 1px rgba(110, 150, 255, 0.1);
+}
+.hero-btns .arco-btn-outline:hover {
+  border-color: var(--accent);
+  color: #dff4ff;
+  box-shadow: 0 0 18px rgba(0, 224, 255, 0.25);
+}
+
+.hint {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin: 0;
+  letter-spacing: 0.3px;
+}
+.hint b {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* 自定义滚动条，统一科技感 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(110, 150, 255, 0.25);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(110, 150, 255, 0.45);
+}

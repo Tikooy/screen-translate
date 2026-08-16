@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>取词翻译</title>
+  <style>
+    :root {
+      --bg: #0a1120;
+      --panel: rgba(15, 26, 48, 0.85);
+      --border: rgba(110, 150, 255, 0.2);
+      --accent: #00e0ff;
+      --text: #e8eefc;
+      --text-dim: #8b9bc0;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: transparent;
+      overflow: hidden;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    .frame {
+      position: absolute;
+      inset: 0;
+      box-sizing: border-box;
+      margin: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-radius: 12px;
+      background: radial-gradient(400px 200px at 100% 0%, rgba(0, 224, 255, 0.08), transparent 60%), var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45), 0 0 22px rgba(77, 159, 255, 0.12);
+    }
+
+    .source {
+      font-size: 12px;
+      color: var(--text-dim);
+      max-height: 40px;
+      overflow: hidden;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border-bottom: 1px dashed rgba(110, 150, 255, 0.2);
+      padding-bottom: 4px;
+    }
+    .translated {
+      font-size: 15px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      flex: 1;
+      overflow-y: auto;
+      color: var(--text);
+    }
+    .translated.hint {
+      color: #ffb020;
+    }
+    .translated.streaming::after {
+      content: '▍';
+      color: var(--accent);
+      margin-left: 2px;
+      animation: blink 1s step-start infinite;
+    }
+    .tw-char {
+      animation: tw-in 0.18s ease-out;
+    }
+    @keyframes tw-in {
+      from {
+        opacity: 0;
+        transform: translateY(1px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    @keyframes blink {
+      50% {
+        opacity: 0;
+      }
+    }
+    .placeholder {
+      margin: auto;
+      font-size: 13px;
+      color: var(--text-dim);
+      text-align: center;
+      line-height: 1.7;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(110, 150, 255, 0.3);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="source" id="source" hidden></div>
+    <div class="translated" id="translated"></div>
+    <div class="placeholder" id="placeholder">
+      在任意应用选中文字后，按下全局热键，译文将显示于此。
+      窗口可拖动、缩放，右上角可关闭或最小化。
+    </div>
+  </div>
+
+  <script>
+    const sourceEl = document.getElementById('source')
+    const translatedEl = document.getElementById('translated')
+    const placeholderEl = document.getElementById('placeholder')
+    let lastId = null
+
+    // ---- 打字机：译文逐字流出，每字淡入 ----
+    let twTarget = ''
+    let twCount = 0
+    let twRaf = 0
+    let twLast = 0
+
+    function twStep(now) {
+      twRaf = 0
+      if (now - twLast < 30) {
+        twRaf = requestAnimationFrame(twStep)
+        return
+      }
+      twLast = now
+      if (twCount < twTarget.length) {
+        const span = document.createElement('span')
+        span.className = 'tw-char'
+        span.textContent = twTarget[twCount++]
+        translatedEl.appendChild(span)
+        if (twCount < twTarget.length) twRaf = requestAnimationFrame(twStep)
+      }
+    }
+
+    function twPush(text) {
+      twTarget = text
+      if (!twRaf && twCount < twTarget.length) {
+        twLast = 0
+        twRaf = requestAnimationFrame(twStep)
+      }
+    }
+
+    function twReset() {
+      twTarget = ''
+      twCount = 0
+      if (twRaf) {
+        cancelAnimationFrame(twRaf)
+        twRaf = 0
+      }
+      translatedEl.innerHTML = ''
+    }
+
+    function show(data) {
+      sourceEl.textContent = data.source || ''
+      sourceEl.hidden = !data.source
+      translatedEl.classList.toggle('hint', !!data.hint)
+      // 未完成时显示流式光标
+      translatedEl.classList.toggle('streaming', data.done === false)
+      placeholderEl.hidden = true
+      if (data.hint) {
+        // 提示文本直接显示，不做逐字
+        twReset()
+        translatedEl.textContent = data.translated || ''
+      } else if (data.translated && data.translated !== twTarget) {
+        // 流式：translated 累计增长，diff 出新部分逐字播放
+        twPush(data.translated)
+      }
+    }
+
+    async function poll() {
+      try {
+        const res = await fetch('/api/wordpick/result')
+        const data = await res.json()
+        if (data && data.id) {
+          if (data.id !== lastId) {
+            lastId = data.id
+            twReset()
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.move_to) {
+              await window.pywebview.api.move_to(data.cursor_x, data.cursor_y)
+            }
+          }
+          show(data)
+        }
+      } catch (e) {
+        // 后端未就绪时静默重试
+      }
+      setTimeout(poll, 400)
+    }
+
+    poll()
+  </script>
+</body>
+</html>

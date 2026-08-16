@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>区域翻译</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: transparent;
+      overflow: hidden;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    /* 整窗透明，只留一圈发光青蓝虚线标出框选范围 */
+    .frame {
+      position: fixed;
+      inset: 0;
+      box-sizing: border-box;
+      border: 1.5px dashed rgba(0, 224, 255, 0.65);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      box-shadow: inset 0 0 20px rgba(0, 224, 255, 0.08);
+    }
+
+    .header {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 6px 0 10px;
+      background: linear-gradient(135deg, rgba(28, 40, 72, 0.94), rgba(12, 20, 40, 0.94));
+      border-radius: 6px 6px 0 0;
+      border-bottom: 1px solid rgba(0, 224, 255, 0.35);
+      box-shadow: 0 1px 12px rgba(0, 224, 255, 0.18);
+      cursor: default;
+    }
+
+    .drag-strip {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+      cursor: move;
+      color: #eaf6ff;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    .drag-strip .hint {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0;
+      color: rgba(160, 190, 230, 0.7);
+    }
+
+    .btn {
+      flex: 0 0 auto;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      color: #fff;
+      background: linear-gradient(135deg, #3f8cff, #2f6fff);
+      box-shadow: 0 0 14px rgba(77, 159, 255, 0.4);
+    }
+    .btn:hover { filter: brightness(1.12); }
+    .btn.running { background: linear-gradient(135deg, #ff5c5c, #e83434); box-shadow: 0 0 14px rgba(255, 80, 80, 0.45); }
+    .btn.running:hover { filter: brightness(1.1); }
+    .btn.ghost { background: rgba(120, 160, 240, 0.16); box-shadow: none; }
+    .btn.ghost:hover { background: rgba(120, 160, 240, 0.3); }
+
+    .body {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 6px;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    .status {
+      flex: 0 0 auto;
+      font-size: 12px;
+      color: #bff0ff;
+      background: rgba(0, 224, 255, 0.12);
+      border: 1px solid rgba(0, 224, 255, 0.3);
+      border-radius: 6px;
+      padding: 3px 8px;
+      display: none;
+    }
+    .status:not(:empty) { display: inline-block; align-self: flex-start; }
+
+    .placeholder {
+      margin: auto;
+      font-size: 13px;
+      color: rgba(190, 220, 255, 0.85);
+      text-align: center;
+      line-height: 1.7;
+      text-shadow: 0 0 14px rgba(0, 224, 255, 0.5), 0 1px 3px rgba(0, 0, 0, 0.6);
+      padding: 0 10px;
+    }
+
+    .result {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: rgba(10, 17, 32, 0.92);
+      border: 1px solid rgba(110, 150, 255, 0.28);
+      border-radius: 6px;
+      padding: 8px 10px;
+      overflow: hidden;
+      user-select: text;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+    }
+    .result[hidden] { display: none; }
+
+    .source {
+      flex: 0 0 auto;
+      max-height: 34%;
+      overflow-y: auto;
+      font-size: 12px;
+      color: #8b9bc0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border-bottom: 1px dashed rgba(110, 150, 255, 0.25);
+      padding-bottom: 4px;
+    }
+    .source[hidden] { display: none; }
+
+    .translated {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #eaf6ff;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .translated.error { color: #ff6b6b; }
+    .translated.muted { color: #7fd8ff; }
+
+    .resizer {
+      position: absolute;
+      right: 2px;
+      bottom: 2px;
+      width: 14px;
+      height: 14px;
+      cursor: nwse-resize;
+      z-index: 10;
+    }
+    .resizer::after {
+      content: '';
+      position: absolute;
+      right: 2px;
+      bottom: 2px;
+      border-right: 3px solid rgba(0, 224, 255, 0.85);
+      border-bottom: 3px solid rgba(0, 224, 255, 0.85);
+      width: 8px;
+      height: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="header">
+      <div class="drag-strip pywebview-drag-region">
+        区域翻译 <span class="hint">拖动框选</span>
+      </div>
+      <button id="startBtn" class="btn">开始</button>
+      <button id="closeBtn" class="btn ghost">关闭</button>
+    </div>
+
+    <div class="body">
+      <div class="status" id="status"></div>
+      <div class="result" id="result" hidden>
+        <div class="source" id="source" hidden></div>
+        <div class="translated" id="translated"></div>
+      </div>
+      <div class="placeholder" id="placeholder">拖动此框到需要翻译的区域，点击「开始」</div>
+      <div class="resizer" id="resizer" title="拖动调整大小"></div>
+    </div>
+  </div>
+
+  <script>
+    // window.pywebview.api 是页面加载完成后由 pywebview 异步注入的，不能在脚本
+    // 顶部一次性缓存（那时它可能还不存在），需在每次使用时实时获取。
+    function getApi() {
+      return window.pywebview && window.pywebview.api
+    }
+    const startBtn = document.getElementById('startBtn')
+    const closeBtn = document.getElementById('closeBtn')
+    const statusEl = document.getElementById('status')
+    const resultEl = document.getElementById('result')
+    const sourceEl = document.getElementById('source')
+    const translatedEl = document.getElementById('translated')
+    const placeholderEl = document.getElementById('placeholder')
+    const resizer = document.getElementById('resizer')
+
+    let running = false
+
+    const STATUS_TEXT = {
+      idle: '',
+      capturing: '正在识别区域文字…',
+      empty: '区域内未识别到文字',
+      unchanged: '',
+      already_target: '',
+      translating: '正在翻译…',
+      done: '',
+      error: '',
+    }
+
+    function updateBtn() {
+      startBtn.textContent = running ? '停止' : '开始'
+      startBtn.classList.toggle('running', running)
+    }
+
+    startBtn.addEventListener('click', async () => {
+      const api = getApi()
+      if (!api || !api.start) {
+        statusEl.textContent = '请在桌面应用中打开区域翻译'
+        return
+      }
+      if (running) {
+        await api.stop()
+        running = false
+      } else {
+        const r = await api.start()
+        running = !!(r && r.ok !== false)
+        if (r && r.ok === false) {
+          statusEl.textContent = r.error || '启动失败'
+        }
+      }
+      updateBtn()
+    })
+
+    closeBtn.addEventListener('click', () => {
+      const api = getApi()
+      if (api && api.close) api.close()
+    })
+
+    // ---- 右下角缩放手柄：拖动时把新尺寸（逻辑像素）交给桌面端 ----
+    let rz = null
+    let rzLastW = 0
+    let rzLastH = 0
+
+    resizer.addEventListener('mousedown', (e) => {
+      const api = getApi()
+      if (!api || !api.resize) return
+      e.preventDefault()
+      e.stopPropagation()
+      rz = { x: e.clientX, y: e.clientY, w: window.innerWidth, h: window.innerHeight, api }
+      rzLastW = rz.w
+      rzLastH = rz.h
+      window.addEventListener('mousemove', onRzMove)
+      window.addEventListener('mouseup', onRzUp)
+    })
+
+    function onRzMove(e) {
+      if (!rz) return
+      const w = Math.max(240, rz.w + (e.clientX - rz.x))
+      const h = Math.max(150, rz.h + (e.clientY - rz.y))
+      if (Math.abs(w - rzLastW) < 2 && Math.abs(h - rzLastH) < 2) return
+      rzLastW = w
+      rzLastH = h
+      rz.api.resize(Math.round(w), Math.round(h))
+    }
+
+    function onRzUp() {
+      rz = null
+      window.removeEventListener('mousemove', onRzMove)
+      window.removeEventListener('mouseup', onRzUp)
+    }
+
+    // ---- 轮询后端结果并渲染 ----
+    function render(d) {
+      running = !!d.running
+      updateBtn()
+
+      const s = d.status || 'idle'
+      statusEl.textContent = d.note || STATUS_TEXT[s] || ''
+
+      const showResult = ['done', 'unchanged', 'already_target', 'translating', 'error'].includes(s)
+      placeholderEl.hidden = s !== 'idle'
+      resultEl.hidden = !showResult
+      if (!showResult) return
+
+      sourceEl.textContent = d.source || ''
+      sourceEl.hidden = !d.source
+
+      if (s === 'done' || s === 'unchanged') {
+        translatedEl.textContent = d.translated || ''
+        translatedEl.classList.remove('error', 'muted')
+      } else if (s === 'already_target') {
+        translatedEl.textContent = '已是目标语言，无需翻译'
+        translatedEl.classList.remove('error')
+        translatedEl.classList.add('muted')
+      } else if (s === 'translating') {
+        translatedEl.textContent = d.translated || ''
+        translatedEl.classList.remove('error', 'muted')
+      } else if (s === 'error') {
+        translatedEl.textContent = d.error || '翻译失败'
+        translatedEl.classList.add('error')
+        translatedEl.classList.remove('muted')
+      }
+    }
+
+    async function poll() {
+      try {
+        const res = await fetch('/api/region/result')
+        const data = await res.json()
+        if (data) render(data)
+      } catch (e) {
+        // 后端未就绪时静默重试
+      }
+      setTimeout(poll, 350)
+    }
+
+    updateBtn()
+    poll()
+  </script>
+</body>
+</html>
